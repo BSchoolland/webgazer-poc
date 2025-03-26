@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eye Tracking API Tester</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/heatmap.js@2.0.5/build/heatmap.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Eye Tracking API Tester</h1>
+        
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="submit">Submit Data</button>
+            <button class="tab-btn" data-tab="view">View Data</button>
+            <button class="tab-btn" data-tab="all">View All Sessions</button>
+        </div>
+        
+        <div class="tab-content active" id="submit-tab">
+            <h2>Submit Test Data</h2>
+            <form id="eyetracking-form">
+                <div class="form-group">
+                    <label for="x">X Coordinate:</label>
+                    <input type="number" id="x" name="x" required step="0.01">
+                </div>
+                <div class="form-group">
+                    <label for="y">Y Coordinate:</label>
+                    <input type="number" id="y" name="y" required step="0.01">
+                </div>
+                <div class="form-group">
+                    <label for="screen_w">Screen Width:</label>
+                    <input type="number" id="screen_w" name="screen_w" required step="0.01" value="1920">
+                </div>
+                <div class="form-group">
+                    <label for="screen_h">Screen Height:</label>
+                    <input type="number" id="screen_h" name="screen_h" required step="0.01" value="1080">
+                </div>
+                <div class="form-group">
+                    <label for="scroll">Scroll Position:</label>
+                    <input type="number" id="scroll" name="scroll" step="0.01" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="session_id">Session ID:</label>
+                    <input type="text" id="session_id" name="session_id" required>
+                </div>
+                <div class="form-group">
+                    <label for="element">Element:</label>
+                    <input type="text" id="element" name="element" required placeholder="e.g., button-login">
+                </div>
+                <button type="submit" class="btn">Submit Data</button>
+            </form>
+            <div id="submit-result" class="result-box"></div>
+        </div>
+        
+        <div class="tab-content" id="view-tab">
+            <h2>View Session Data</h2>
+            <div class="form-group">
+                <label for="fetch-session-id">Session ID:</label>
+                <input type="text" id="fetch-session-id" name="fetch-session-id" required>
+                <button id="fetch-data-btn" class="btn">Fetch Data</button>
+            </div>
+            
+            <div class="visualization-options">
+                <label>Visualization Type:</label>
+                <div class="radio-group">
+                    <input type="radio" id="vis-points" name="vis-type" value="points" checked>
+                    <label for="vis-points">Points</label>
+                    
+                    <input type="radio" id="vis-heatmap" name="vis-type" value="heatmap">
+                    <label for="vis-heatmap">Heatmap</label>
+                </div>
+            </div>
+            
+            <div class="data-visualizer">
+                <div class="data-table-container">
+                    <table id="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>X</th>
+                                <th>Y</th>
+                                <th>Screen W</th>
+                                <th>Screen H</th>
+                                <th>Scroll</th>
+                                <th>Timestamp</th>
+                                <th>Element</th>
+                            </tr>
+                        </thead>
+                        <tbody id="data-table-body"></tbody>
+                    </table>
+                </div>
+                <div id="visualization-area" class="visualization-area">
+                    <!-- Visualization will be rendered here -->
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="all-tab">
+            <h2>View All Sessions</h2>
+            
+            <div class="sessions-control">
+                <button id="fetch-all-btn" class="btn">Fetch All Sessions Data</button>
+                
+                <div class="session-selector">
+                    <label>Filter Sessions:</label>
+                    <div id="sessions-list" class="sessions-list">
+                        <div class="loading-sessions">Loading sessions...</div>
+                    </div>
+                    <button id="update-viz-btn" class="btn btn-secondary">Update Visualization</button>
+                </div>
+            </div>
+            
+            <div class="data-summary">
+                <span>Data points: <strong id="total-points">0</strong></span>
+                <span>Sessions: <strong id="total-sessions">0</strong></span>
+            </div>
+            
+            <div id="all-visualization-area" class="visualization-area">
+                <!-- Combined visualization will be rendered here -->
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html> 
