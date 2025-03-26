@@ -15,18 +15,6 @@ const screenData = {
     devicePixelRatio: window.devicePixelRatio
 };
 
-// Calibration points
-const calibrationPoints = [
-    { x: 100, y: 100 },
-    { x: window.innerWidth - 100, y: 100 },
-    { x: window.innerWidth - 100, y: window.innerHeight - 100 },
-    { x: 100, y: window.innerHeight - 100 },
-    { x: window.innerWidth / 2, y: window.innerHeight / 2 }
-];
-
-let currentCalibrationPoint = 0;
-let isCalibrating = false;
-
 // Function to get element at coordinates
 function getElementAtPoint(x, y) {
     const element = document.elementFromPoint(x, y);
@@ -38,139 +26,57 @@ function getElementAtPoint(x, y) {
     return element.tagName.toLowerCase();
 }
 
-// Create calibration UI
-function createCalibrationUI() {
-    const calibrationDiv = document.createElement('div');
-    calibrationDiv.id = 'calibration-ui';
-    calibrationDiv.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.8);
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        z-index: 9999;
-        color: white;
-    `;
-    
-    const instructions = document.createElement('p');
-    instructions.textContent = 'Please look at the dot and click when you are looking directly at it.';
-    instructions.style.marginBottom = '20px';
-    
-    const dot = document.createElement('div');
-    dot.id = 'calibration-dot';
-    dot.style.cssText = `
-        width: 20px;
-        height: 20px;
-        background: #ff6ec4;
-        border-radius: 50%;
-        position: absolute;
-        transition: all 0.3s ease;
-    `;
-    
-    const progress = document.createElement('div');
-    progress.id = 'calibration-progress';
-    progress.style.cssText = `
-        margin-top: 20px;
-        font-size: 18px;
-    `;
-    
-    calibrationDiv.appendChild(instructions);
-    calibrationDiv.appendChild(dot);
-    calibrationDiv.appendChild(progress);
-    document.body.appendChild(calibrationDiv);
-    
-    return { dot, progress };
-}
-
-// Start calibration process
-function startCalibration() {
-    isCalibrating = true;
-    const { dot, progress } = createCalibrationUI();
-    
-    function moveToNextPoint() {
-        if (currentCalibrationPoint < calibrationPoints.length) {
-            const point = calibrationPoints[currentCalibrationPoint];
-            dot.style.left = `${point.x}px`;
-            dot.style.top = `${point.y}px`;
-            progress.textContent = `Calibration point ${currentCalibrationPoint + 1} of ${calibrationPoints.length}`;
-        } else {
-            finishCalibration();
-        }
-    }
-    
-    dot.addEventListener('click', () => {
-        currentCalibrationPoint++;
-        moveToNextPoint();
-    });
-    
-    moveToNextPoint();
-}
-
-// Finish calibration
-function finishCalibration() {
-    const calibrationUI = document.getElementById('calibration-ui');
-    if (calibrationUI) {
-        calibrationUI.remove();
-    }
-    isCalibrating = false;
-    console.log('Calibration completed!');
-}
-
 // Initialize WebGazer
 function initWebGazer() {
     console.log('Initializing WebGazer...');
-    // Start WebGazer
-    webgazer.begin();
     
-    // Set up gaze listener
-    webgazer.setGazeListener(function(data, elapsedTime) {
-        if (data == null) {
-            console.log('No gaze data available yet...');
-            return;
-        }
-        
-        // Get current scroll position (only Y)
-        scrollData.scrollY = window.scrollY;
-        
-        // Get current timestamp
-        const currentTime = Date.now();
-        
-        // Send data every second
-        if (currentTime - lastDataSent >= 1000) {
-            // Get element at gaze point
-            const element = getElementAtPoint(data.x, data.y);
+    // Configure WebGazer for better tracking
+    webgazer.setRegression('ridge')
+        .setTracker('TFFacemesh')
+        .setGazeListener(function(data, elapsedTime) {
+            if (data == null) {
+                console.log('No gaze data available yet...');
+                return;
+            }
             
-            const gazeData = {
-                x: data.x,
-                y: data.y,
-                screen_w: screenData.width,
-                screen_h: screenData.height,
-                scroll: scrollData.scrollY,
-                timestamp: new Date(currentTime).toISOString(),
-                session_id: sessionId,
-                element: element
-            };
+            // Get current scroll position (only Y)
+            scrollData.scrollY = window.scrollY;
             
-            // Log data to console for testing
-            console.log('=== Gaze Data Update ===');
-            console.log('Coordinates:', `x: ${gazeData.x.toFixed(2)}, y: ${gazeData.y.toFixed(2)}`);
-            console.log('Scroll Position:', gazeData.scroll);
-            console.log('Screen Size:', `${gazeData.screen_w}x${gazeData.screen_h}`);
-            console.log('Element:', gazeData.element);
-            console.log('Session ID:', gazeData.session_id);
-            console.log('Timestamp:', gazeData.timestamp);
-            console.log('=====================');
+            // Get current timestamp
+            const currentTime = Date.now();
             
-            // Send data to backend
-            sendGazeData(gazeData);
-            lastDataSent = currentTime;
-        }
-    });
+            // Send data every second
+            if (currentTime - lastDataSent >= 1000) {
+                // Get element at gaze point
+                const element = getElementAtPoint(data.x, data.y);
+                
+                const gazeData = {
+                    x: data.x,
+                    y: data.y,
+                    screen_w: screenData.width,
+                    screen_h: screenData.height,
+                    scroll: scrollData.scrollY,
+                    timestamp: new Date(currentTime).toISOString(),
+                    session_id: sessionId,
+                    element: element
+                };
+                
+                // Log data to console for testing
+                console.log('=== Gaze Data Update ===');
+                console.log('Coordinates:', `x: ${gazeData.x.toFixed(2)}, y: ${gazeData.y.toFixed(2)}`);
+                console.log('Scroll Position:', gazeData.scroll);
+                console.log('Screen Size:', `${gazeData.screen_w}x${gazeData.screen_h}`);
+                console.log('Element:', gazeData.element);
+                console.log('Session ID:', gazeData.session_id);
+                console.log('Timestamp:', gazeData.timestamp);
+                console.log('=====================');
+                
+                // Send data to backend
+                sendGazeData(gazeData);
+                lastDataSent = currentTime;
+            }
+        })
+        .begin();
 }
 
 // Function to send gaze data to backend
@@ -205,9 +111,5 @@ document.addEventListener('DOMContentLoaded', function() {
     document.head.appendChild(script);
     
     // Initialize WebGazer after script loads
-    script.onload = function() {
-        initWebGazer();
-        // Start calibration after a short delay to ensure WebGazer is ready
-        setTimeout(startCalibration, 2000);
-    };
+    script.onload = initWebGazer;
 }); 
