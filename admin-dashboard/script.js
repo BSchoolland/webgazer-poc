@@ -247,21 +247,64 @@ document.addEventListener('DOMContentLoaded', () => {
         // Initialize heatmap.js
         const heatmapInstance = h337.create({
             container: heatmapContainer,
-            radius: 30,
-            maxOpacity: 0.6,
-            minOpacity: 0,
-            blur: 0.75
+            radius: 50,
+            maxOpacity: 0.9,
+            minOpacity: 0.3,
+            blur: 0.9
         });
+        
+        // Group points that are close to each other (within 50 pixels)
+        const pointClusters = [];
+        const proximity = 50; // 50 pixel proximity threshold
+        
+        data.forEach(item => {
+            const x = Math.round(item.x * scaleX);
+            const y = Math.round(item.y * scaleY);
+            
+            // Check if this point is close to any existing cluster
+            let foundCluster = false;
+            for (const cluster of pointClusters) {
+                // Calculate distance to cluster center
+                const distance = Math.sqrt(
+                    Math.pow(x - cluster.x, 2) + 
+                    Math.pow(y - cluster.y, 2)
+                );
+                
+                if (distance <= proximity) {
+                    // Add to existing cluster
+                    cluster.count++;
+                    // Update center as weighted average
+                    cluster.x = (cluster.x * (cluster.count - 1) + x) / cluster.count;
+                    cluster.y = (cluster.y * (cluster.count - 1) + y) / cluster.count;
+                    foundCluster = true;
+                    break;
+                }
+            }
+            
+            // If not close to any cluster, create a new one
+            if (!foundCluster) {
+                pointClusters.push({
+                    x: x,
+                    y: y,
+                    count: 1
+                });
+            }
+        });
+        
+        // Convert clusters to heatmap data format
+        const heatmapPoints = pointClusters.map(cluster => ({
+            x: Math.round(cluster.x),
+            y: Math.round(cluster.y),
+            value: cluster.count
+        }));
+        
+        let maxValue = Math.max(...heatmapPoints.map(point => point.value));
         
         // Prepare data points for heatmap
         const heatmapData = {
-            max: data.length,
-            min: 0,
-            data: data.map(item => ({
-                x: Math.round(item.x * scaleX),
-                y: Math.round(item.y * scaleY),
-                value: 1  // Each point has equal weight
-            }))
+            max: maxValue,
+            min: 1,
+            data: heatmapPoints
         };
         
         // Add data to heatmap
@@ -277,7 +320,11 @@ document.addEventListener('DOMContentLoaded', () => {
         legend.style.borderRadius = '4px';
         legend.style.fontSize = '12px';
         legend.style.zIndex = '100';
-        legend.textContent = `Heatmap of ${data.length} eye tracking points`;
+        legend.innerHTML = `
+            <div>Heatmap of ${data.length} eye tracking points</div>
+            <div>Highest concentration: ${maxValue} points</div>
+            <div>Total clusters: ${pointClusters.length}</div>
+        `;
         visualizationArea.appendChild(legend);
     }
     
@@ -422,27 +469,75 @@ document.addEventListener('DOMContentLoaded', () => {
         // Initialize heatmap.js
         const heatmapInstance = h337.create({
             container: heatmapContainer,
-            radius: 30,
-            maxOpacity: 0.6,
-            minOpacity: 0,
-            blur: 0.85
+            radius: 50,
+            maxOpacity: 0.9,
+            minOpacity: 0.3,
+            blur: 0.9
         });
+        
+        // Group points that are close to each other (within 50 pixels)
+        const pointClusters = [];
+        const proximity = 50; // 50 pixel proximity threshold
+        
+        data.forEach(item => {
+            const x = Math.round(item.x * scaleX);
+            const y = Math.round(item.y * scaleY);
+            
+            // Check if this point is close to any existing cluster
+            let foundCluster = false;
+            for (const cluster of pointClusters) {
+                // Calculate distance to cluster center
+                const distance = Math.sqrt(
+                    Math.pow(x - cluster.x, 2) + 
+                    Math.pow(y - cluster.y, 2)
+                );
+                
+                if (distance <= proximity) {
+                    // Add to existing cluster
+                    cluster.count++;
+                    // Update center as weighted average
+                    cluster.x = (cluster.x * (cluster.count - 1) + x) / cluster.count;
+                    cluster.y = (cluster.y * (cluster.count - 1) + y) / cluster.count;
+                    // Add session to cluster's sessions if not already there
+                    if (!cluster.sessions.includes(item.session_id)) {
+                        cluster.sessions.push(item.session_id);
+                    }
+                    foundCluster = true;
+                    break;
+                }
+            }
+            
+            // If not close to any cluster, create a new one
+            if (!foundCluster) {
+                pointClusters.push({
+                    x: x,
+                    y: y,
+                    count: 1,
+                    sessions: [item.session_id]
+                });
+            }
+        });
+        
+        // Convert clusters to heatmap data format
+        const heatmapPoints = pointClusters.map(cluster => ({
+            x: Math.round(cluster.x),
+            y: Math.round(cluster.y),
+            value: cluster.count
+        }));
+        
+        let maxValue = Math.max(...heatmapPoints.map(point => point.value));
         
         // Prepare data points for heatmap
         const heatmapData = {
-            max: data.length,
-            min: 0,
-            data: data.map(item => ({
-                x: Math.round(item.x * scaleX),
-                y: Math.round(item.y * scaleY),
-                value: 1  // Each point has equal weight
-            }))
+            max: maxValue,
+            min: 1,
+            data: heatmapPoints
         };
         
         // Add data to heatmap
         heatmapInstance.setData(heatmapData);
         
-        // Group sessions by color for legend
+        // Get unique sessions across all data
         const sessions = [...new Set(data.map(item => item.session_id))];
         
         // Add legend
@@ -459,6 +554,8 @@ document.addEventListener('DOMContentLoaded', () => {
         legend.innerHTML = `
             <div><strong>Combined Heatmap</strong></div>
             <div>Total points: ${data.length}</div>
+            <div>Total clusters: ${pointClusters.length}</div>
+            <div>Highest concentration: ${maxValue} points</div>
             <div>Sessions: ${sessions.length}</div>
             <div style="margin-top: 5px; font-size: 11px; max-height: 100px; overflow-y: auto;">
                 ${sessions.map(session => `<div>${session}</div>`).join('')}
